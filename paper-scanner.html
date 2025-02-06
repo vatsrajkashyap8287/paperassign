@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Paper Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #1a73e8;
+            margin-bottom: 10px;
+        }
+
+        .scan-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .scanner-section, .assignment-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .scanner-section h2, .assignment-section h2 {
+            color: #1a73e8;
+            margin-bottom: 15px;
+        }
+
+        #reader {
+            width: 100%;
+            height: 300px;
+            border: 2px solid #1a73e8;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .camera-toggle {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: background 0.3s;
+        }
+
+        .camera-toggle:hover {
+            background: #1557b0;
+        }
+
+        .student-list {
+            margin-top: 20px;
+        }
+
+        .student-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .student-info {
+            flex: 1;
+        }
+
+        .student-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .student-id {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .assign-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .assign-button:hover {
+            background: #218838;
+        }
+
+        .scan-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .scan-result.success {
+            display: block;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .scan-result.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .paper-preview {
+            width: 100%;
+            height: 200px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+
+        .paper-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        @media (max-width: 768px) {
+            .scan-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Exam Paper Scanner</h1>
+            <p>Scan and assign papers to students efficiently</p>
+        </div>
+
+        <div class="scan-container">
+            <div class="scanner-section">
+                <h2>Scanner</h2>
+                <div id="reader"></div>
+                <button class="camera-toggle" onclick="toggleCamera()">Start Camera</button>
+                <div class="scan-result" id="scanResult"></div>
+                <div class="paper-preview" id="paperPreview">
+                    <p>Paper preview will appear here</p>
+                </div>
+            </div>
+
+            <div class="assignment-section">
+                <h2>Assignment</h2>
+                <div class="student-list" id="studentList">
+                    <!-- Student cards will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let html5QrcodeScanner = null;
+        let cameraActive = false;
+        
+        // Sample student data
+        const students = [
+            { id: '2023001', name: 'Alice Johnson', paper: null },
+            { id: '2023002', name: 'Bob Smith', paper: null },
+            { id: '2023003', name: 'Carol White', paper: null },
+            { id: '2023004', name: 'David Brown', paper: null }
+        ];
+
+        function toggleCamera() {
+            if (!cameraActive) {
+                startCamera();
+            } else {
+                stopCamera();
+            }
+        }
+
+        function startCamera() {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                onScanSuccess,
+                onScanError
+            )
+            .then(() => {
+                cameraActive = true;
+                document.querySelector('.camera-toggle').textContent = 'Stop Camera';
+            })
+            .catch((err) => {
+                showScanResult('Error starting camera: ' + err, false);
+            });
+        }
+
+        function stopCamera() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop()
+                .then(() => {
+                    cameraActive = false;
+                    document.querySelector('.camera-toggle').textContent = 'Start Camera';
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            showScanResult('Paper scanned successfully!', true);
+            // Simulate paper preview with a placeholder
+            document.getElementById('paperPreview').innerHTML = `
+                <img src="/api/placeholder/400/320" alt="Scanned paper preview" />
+            `;
+        }
+
+        function onScanError(error) {
+            console.warn(`Code scan error = ${error}`);
+        }
+
+        function showScanResult(message, success) {
+            const resultDiv = document.getElementById('scanResult');
+            resultDiv.textContent = message;
+            resultDiv.className = 'scan-result ' + (success ? 'success' : 'error');
+        }
+
+        function assignPaper(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                student.paper = 'Scanned Paper';
+                showScanResult(`Paper assigned to ${student.name}`, true);
+                updateStudentList();
+            }
+        }
+
+        function updateStudentList() {
+            const studentList = document.getElementById('studentList');
+            studentList.innerHTML = students.map(student => `
+                <div class="student-card">
+                    <div class="student-info">
+                        <div class="student-name">${student.name}</div>
+                        <div class="student-id">ID: ${student.id}</div>
+                        ${student.paper ? `<div class="student-paper">Paper: ${student.paper}</div>` : ''}
+                    </div>
+                    ${!student.paper ? `
+                        <button class="assign-button" onclick="assignPaper('${student.id}')">
+                            Assign Paper
+                        </button>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Initialize student list
+        updateStudentList();
+    </script>
+</body>
+</html>

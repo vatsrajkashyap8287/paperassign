@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Capture & Assignment System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --secondary: #818CF8;
+            --success: #34D399;
+            --danger: #EF4444;
+            --dark: #1F2937;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: #F3F4F6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--dark);
+        }
+
+        .camera-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 0.5rem;
+        }
+
+        #video {
+            width: 100%;
+            border-radius: 0.5rem;
+            transform: scaleX(-1);
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid var(--primary);
+            border-radius: 0.5rem;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .preview-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .capture-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .capture-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+        }
+
+        .success-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--success);
+            color: white;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .floating-counter {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--dark);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Paper Capture & Assignment System</h1>
+            <p>Capture exam papers and assign them to students</p>
+        </div>
+
+        <div class="camera-section">
+            <div class="camera-container">
+                <video id="video" autoplay playsinline></video>
+                <div class="camera-overlay"></div>
+            </div>
+            <div class="controls">
+                <button id="captureBtn" class="btn btn-primary">📸 Capture Paper</button>
+                <button id="switchCameraBtn" class="btn btn-primary">🔄 Switch Camera</button>
+            </div>
+        </div>
+
+        <div class="preview-section" id="previewSection">
+            <!-- Captured images will appear here -->
+        </div>
+    </div>
+
+    <div class="floating-counter" id="counter">
+        Papers Captured: <span id="captureCount">0</span>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        let stream;
+        let currentCamera = 'user';
+        let captureCount = 0;
+
+        async function initCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentCamera }
+                });
+                document.getElementById('video').srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Unable to access camera. Please ensure you have granted camera permissions.');
+            }
+        }
+
+        async function switchCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            await initCamera();
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function capturePaper() {
+            showLoading();
+            
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            const previewSection = document.getElementById('previewSection');
+            const captureCard = document.createElement('div');
+            captureCard.className = 'capture-card animate__animated animate__fadeIn';
+            
+            captureCard.innerHTML = `
+                <img src="${imageData}" alt="Captured paper" class="capture-img">
+                <div class="form-group">
+                    <label for="student-${captureCount}">Assign to Student:</label>
+                    <input type="text" id="student-${captureCount}" class="form-control" placeholder="Enter student name">
+                </div>
+                <div class="form-group">
+                    <label for="paper-${captureCount}">Paper Type:</label>
+                    <select id="paper-${captureCount}" class="form-control">
+                        <option value="midterm">Midterm Exam</option>
+                        <option value="final">Final Exam</option>
+                        <option value="quiz">Quiz</option>
+                        <option value="assignment">Assignment</option>
+                    </select>
+                </div>
+                <button onclick="assignPaper(this)" class="btn btn-primary">Assign Paper</button>
+                <button onclick="deletePaper(this)" class="btn btn-danger">Delete</button>
+            `;
+            
+            previewSection.insertBefore(captureCard, previewSection.firstChild);
+            
+            captureCount++;
+            document.getElementById('captureCount').textContent = captureCount;
+            
+            hideLoading();
+        }
+
+        function assignPaper(btn) {
+            const card = btn.parentElement;
+            const studentInput = card.querySelector('input[type="text"]');
+            const paperSelect = card.querySelector('select');
+            
+            if (studentInput.value.trim() === '') {
+                alert('Please enter a student name');
+                return;
+            }
+            
+            const badge = document.createElement('div');
+            badge.className = 'success-badge';
+            badge.textContent = `Assigned to ${studentInput.value}`;
+            
+            btn.replaceWith(badge);
+            studentInput.disabled = true;
+            paperSelect.disabled = true;
+        }
+
+        function deletePaper(btn) {
+            const card = btn.parentElement;
+            card.classList.add('animate__animated', 'animate__fadeOut');
+            setTimeout(() => {
+                card.remove();
+                captureCount--;
+                document.getElementById('captureCount').textContent = captureCount;
+            }, 500);
+        }
+
+        // Event Listeners
+        document.getElementById('captureBtn').addEventListener('click', capturePaper);
+        document.getElementById('switchCameraBtn').addEventListener('click', switchCamera);
+
+        // Initialize camera on load
+        initCamera();
+    </script>
+</body>
+</html>

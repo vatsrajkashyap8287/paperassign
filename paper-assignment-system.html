@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Assignment System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #1a73e8;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .scan-section, .assignment-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .scan-area {
+            border: 2px dashed #1a73e8;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scan-area:hover {
+            background: #f8f9fa;
+        }
+
+        .scan-area i {
+            font-size: 48px;
+            color: #1a73e8;
+            margin-bottom: 10px;
+        }
+
+        .scan-area.dragover {
+            background: #e8f0fe;
+            border-color: #1a73e8;
+        }
+
+        .scanned-papers {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .paper-card {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+
+        .paper-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .paper-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .student-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .student-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .student-card.highlight {
+            background: #e8f0fe;
+            border-color: #1a73e8;
+        }
+
+        .assigned-papers {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 4px;
+            min-height: 50px;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #1a73e8;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #1557b0;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #4caf50;
+            color: white;
+            border-radius: 5px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-graduation-cap"></i> Paper Assignment System</h1>
+            <p>Scan and assign papers to students efficiently</p>
+        </div>
+
+        <div class="main-content">
+            <div class="scan-section">
+                <h2>Scan Papers</h2>
+                <input type="text" class="search-bar" placeholder="Search scanned papers...">
+                <div class="scan-area" id="scanArea">
+                    <i class="fas fa-scanner"></i>
+                    <h3>Drop papers here or click to scan</h3>
+                    <p>Supports PDF, JPG, PNG formats</p>
+                </div>
+                <div class="scanned-papers" id="scannedPapers"></div>
+            </div>
+
+            <div class="assignment-section">
+                <h2>Assign to Students</h2>
+                <input type="text" class="search-bar" placeholder="Search students...">
+                <div class="student-list" id="studentList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Sample data
+        const students = [
+            { id: 1, name: 'Alice Johnson', class: '10A', roll: '101' },
+            { id: 2, name: 'Bob Smith', class: '10A', roll: '102' },
+            { id: 3, name: 'Carol White', class: '10A', roll: '103' },
+        ];
+
+        // Initialize the UI
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeScanArea();
+            renderStudentList();
+            initializeDragAndDrop();
+        });
+
+        function initializeScanArea() {
+            const scanArea = document.getElementById('scanArea');
+            
+            scanArea.addEventListener('click', () => {
+                // Simulate file input click
+                simulateScan();
+            });
+
+            scanArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                scanArea.classList.add('dragover');
+            });
+
+            scanArea.addEventListener('dragleave', () => {
+                scanArea.classList.remove('dragover');
+            });
+
+            scanArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                scanArea.classList.remove('dragover');
+                handleScannedPaper();
+            });
+        }
+
+        function simulateScan() {
+            // Simulate scanning process
+            showNotification('Scanning paper...');
+            setTimeout(() => {
+                handleScannedPaper();
+            }, 1000);
+        }
+
+        function handleScannedPaper() {
+            const scannedPapers = document.getElementById('scannedPapers');
+            const paperCard = createPaperCard();
+            scannedPapers.appendChild(paperCard);
+            showNotification('Paper scanned successfully!');
+        }
+
+        function createPaperCard() {
+            const card = document.createElement('div');
+            card.className = 'paper-card';
+            card.draggable = true;
+            card.innerHTML = `
+                <img src="/api/placeholder/150/120" alt="Scanned Paper">
+                <p>Paper #${Math.floor(Math.random() * 1000)}</p>
+            `;
+
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', card.innerHTML);
+                card.classList.add('dragging');
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+
+            return card;
+        }
+
+        function renderStudentList() {
+            const studentList = document.getElementById('studentList');
+            students.forEach(student => {
+                const studentCard = document.createElement('div');
+                studentCard.className = 'student-card';
+                studentCard.innerHTML = `
+                    <h3>${student.name}</h3>
+                    <p>Class: ${student.class} | Roll: ${student.roll}</p>
+                    <div class="assigned-papers" data-student-id="${student.id}">
+                        <p class="placeholder">Drop papers here</p>
+                    </div>
+                `;
+                studentList.appendChild(studentCard);
+            });
+        }
+
+        function initializeDragAndDrop() {
+            const assignedPapers = document.querySelectorAll('.assigned-papers');
+
+            assignedPapers.forEach(container => {
+                container.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    container.parentElement.classList.add('highlight');
+                });
+
+                container.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    container.parentElement.classList.remove('highlight');
+                });
+
+                container.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    container.parentElement.classList.remove('highlight');
+                    const paperHTML = e.dataTransfer.getData('text/plain');
+                    const paperCard = document.createElement('div');
+                    paperCard.className = 'paper-card';
+                    paperCard.innerHTML = paperHTML;
+                    
+                    // Remove placeholder if it exists
+                    const placeholder = container.querySelector('.placeholder');
+                    if (placeholder) {
+                        container.removeChild(placeholder);
+                    }
+                    
+                    container.appendChild(paperCard);
+                    showNotification('Paper assigned successfully!');
+                });
+            });
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Search functionality
+        document.querySelectorAll('.search-bar').forEach(searchBar => {
+            searchBar.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const isStudentSearch = searchBar.placeholder.includes('students');
+                
+                if (isStudentSearch) {
+                    const studentCards = document.querySelectorAll('.student-card');
+                    studentCards.forEach(card => {
+                        const studentName = card.querySelector('h3').textContent.toLowerCase();
+                        card.style.display = studentName.includes(searchTerm) ? 'block' : 'none';
+                    });
+                } else {
+                    const paperCards = document.querySelectorAll('.scanned-papers .paper-card');
+                    paperCards.forEach(card => {
+                        const paperText = card.textContent.toLowerCase();
+                        card.style.display = paperText.includes(searchTerm) ? 'block' : 'none';
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
